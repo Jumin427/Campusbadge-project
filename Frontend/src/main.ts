@@ -112,17 +112,28 @@ export const ABI: InterfaceAbi = [
 ];
 
 // 컨트랙트 타입 (간단 보강)
-interface CampusContract extends Contract {
+type CampusContract = Contract & {
   owner(): Promise<string>;
   requestCount(): Promise<bigint>;
-  // ★ beneficiary 필드 타입 반영
-  requests(id: bigint | number): Promise<{ requester: string; beneficiary: string; tokenURI: string; status: bigint }>;
-  // ★ createRequest 시그니처 변경
-  createRequest(beneficiary: string, tokenURI: string): Promise<{ wait: () => Promise<ContractTransactionReceipt | null> }>;
-  approveRequest(requestId: bigint | number): Promise<{ wait: () => Promise<ContractTransactionReceipt | null> }>;
-  rejectRequest(requestId: bigint | number, reason: string): Promise<{ wait: () => Promise<ContractTransactionReceipt | null> }>;
-  mintNFT(requestId: bigint | number): Promise<{ wait: () => Promise<ContractTransactionReceipt | null> }>;
-}
+  requests(
+    id: bigint | number,
+  ): Promise<{ requester: string; beneficiary: string; tokenURI: string; status: bigint }>;
+  createRequest(
+    beneficiary: string,
+    tokenURI: string,
+  ): Promise<{ wait: () => Promise<ContractTransactionReceipt | null> }>;
+  approveRequest(
+    requestId: bigint | number,
+  ): Promise<{ wait: () => Promise<ContractTransactionReceipt | null> }>;
+  rejectRequest(
+    requestId: bigint | number,
+    reason: string,
+  ): Promise<{ wait: () => Promise<ContractTransactionReceipt | null> }>;
+  mintNFT(
+    requestId: bigint | number,
+  ): Promise<{ wait: () => Promise<ContractTransactionReceipt | null> }>;
+};
+
 
 // ---------- Ethers 상태 ----------
 let provider: BrowserProvider | null = null;
