@@ -1,18 +1,19 @@
 # db.py
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-# ★ 일단은 하드코딩으로 정확히 맞춰보자
-DB_USER = "campusbadge_user"
-DB_PASS = "supersecret"
-DB_NAME = "campusbadge"
-DB_HOST = "127.0.0.1"  # Docker에서 5432:5432 열어놨으니까 로컬에서 이렇게 접속
-DB_PORT = "5432"
+# Render 환경변수에서 바로 가져오기
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
-DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+if not DATABASE_URL:
+    # 로컬에서 테스트용으로 fallback 쓰고 싶으면 아래 두 줄 정도는 선택사항
+    # DATABASE_URL = "postgresql://campusbadge_user:supersecret@127.0.0.1:5432/campusbadge"
+    # 아니면 아예 강하게 에러 던져도 됨
+    raise RuntimeError("DATABASE_URL env var is not set")
 
-engine = create_engine(DATABASE_URL, echo=True, future=True)
-#                     ↑ echo=True 로 쿼리 로그도 보이게 (디버깅 편하게)
+# Render에서 connection 끊김 방지용 옵션
+engine = create_engine(DATABASE_URL, echo=True, future=True, pool_pre_ping=True)
 
 SessionLocal = sessionmaker(
     autocommit=False,
