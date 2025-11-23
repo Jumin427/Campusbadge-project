@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CampusBadge – 인증서 DApp (온체인/로컬 겸용 데모)</title>
+  <style>
+    :root{ --bg:#0b1220; --card:#101828; --muted:#9aa4b2; --text:#e5eef7; --brand:#4f8cff; --ok:#22c55e; --warn:#f59e0b; --err:#ef4444; --bd:#223045; }
+    *{box-sizing:border-box} html,body{height:100%}
+    body{
+      margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Noto Sans KR, Helvetica, Arial;
+      color:var(--text); background:
+        radial-gradient(1200px 600px at 100% -10%, #27406040 10%, transparent 60%),
+        radial-gradient(1000px 500px at 0% 0%, #1b2a4a40 10%, transparent 60%), var(--bg);
+      line-height:1.5;
+    }
+    header{ position:sticky; top:0; backdrop-filter:saturate(140%) blur(8px); background:#0b1220cc; border-bottom:1px solid var(--bd); z-index:20; }
+    .wrap{max-width:1050px; margin:0 auto; padding:16px}
+    h1{font-size:20px; margin:8px 0; letter-spacing:.3px}
+    .brand{display:flex; align-items:center; gap:10px}
+    .badge{border:1px solid var(--bd); padding:2px 8px; border-radius:9999px; color:var(--muted); font-size:12px}
+    .grid{display:grid; gap:16px}
+    @media (min-width:960px){ .grid-2{grid-template-columns: 3fr 2fr} }
+    .card{
+      background:linear-gradient(180deg, #0f172a, #0c1325);
+      border:1px solid var(--bd);
+      border-radius:16px;
+      padding:18px;
+      box-shadow:0 10px 30px #0006;
+    }
+    .card h2{margin:0 0 10px 0; font-size:18px}
+    label{display:block; font-size:12px; color:var(--muted); margin-bottom:6px}
+    input, textarea, select{
+      width:100%; padding:10px 12px; border-radius:12px; border:1px solid #24324a; background:#0a1326; color:var(--text);
+      outline:none; transition:border .15s, box-shadow .15s; font-size:14px;
+    }
+    textarea{resize:vertical; min-height:90px}
+    input:focus, textarea:focus, select:focus{border-color:#345; box-shadow:0 0 0 3px #4f8cff33}
+    .row{display:grid; gap:12px}
+    @media (min-width:760px){ .row-2{grid-template-columns:1fr 1fr} .row-3{grid-template-columns:1fr 1fr 1fr} }
+    .btn{appearance:none; border:1px solid transparent; background:var(--brand); color:#fff; padding:10px 14px; border-radius:12px; cursor:pointer; font-weight:600; font-size:13px}
+    .btn:disabled{opacity:.6; cursor:not-allowed}
+    .btn.ghost{background:#0b1220; border-color:var(--bd); color:var(--text)}
+    .btn.warn{background:var(--warn); border-color:#0000}
+    .btn.ok{background:var(--ok)}
+    .btn.err{background:var(--err)}
+    .flex{display:flex; gap:10px; align-items:center}
+    .right{margin-left:auto}
+    .muted{color:var(--muted)}
+    .small{font-size:12px}
+    .hr{height:1px; background:var(--bd); margin:12px 0}
+    .table{width:100%; border-collapse:collapse; font-size:14px}
+    .table th,.table td{border-bottom:1px solid #1b2942; padding:10px 8px; text-align:left}
+    .status{padding:2px 8px; border-radius:999px; font-size:12px; border:1px solid #23344f}
+    .s-pending{background:#f59e0b22; color:#fbbf24}
+    .s-minted{background:#22c55e22; color:#86efac}
+    .s-rejected{background:#ef444422; color:#fca5a5}
+    .s-revoked{background:#ef444422; color:#fecaca}
+    .tabbar{display:flex; gap:8px; flex-wrap:wrap}
+    .tabbar button{background:#0b1220; border:1px solid var(--bd); color:var(--text); padding:8px 12px; border-radius:999px; cursor:pointer; font-size:12px}
+    .tabbar button.active{background:var(--brand); border-color:#0000}
+    dialog{border:1px solid var(--bd); border-radius:16px; padding:0; background:#0b1220; color:#fff; width:min(720px, 92vw)}
+    dialog::backdrop{background:#0008}
+    .dlg-head{padding:14px 16px; border-bottom:1px solid var(--bd); font-weight:700}
+    .dlg-body{padding:14px 16px}
+    pre{margin:0; background:#071125; padding:12px; border-radius:12px; overflow:auto; max-height:60vh}
+    .pill{border:1px solid var(--bd); border-radius:9999px; padding:4px 10px; font-size:12px; color:var(--muted)}
+    .toast{position:fixed; bottom:16px; left:50%; transform:translateX(-50%); background:#0b1220; border:1px solid var(--bd); padding:10px 14px; border-radius:12px; box-shadow:0 10px 24px #0006; display:none; z-index:50}
+    .toast.show{display:block}
+    a{color:#9cc4ff}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap flex">
+      <div class="brand">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path d="M12 3l7 4v6c0 4.418-3.582 8-8 8s-8-3.582-8-8V7l7-4z" stroke="#4f8cff" stroke-width="1.6"/>
+          <path d="M9 10h6M9 14h6" stroke="#9cc4ff" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        <h1>CampusBadge – 인증서 웹 데모(온체인/로컬 겸용)</h1>
+        <span class="badge">지갑 연결 시 온체인 · 미연결 시 로컬</span>
+      </div>
+      <div class="right flex" style="gap:8px">
+        <div class="pill" id="login-pill">계정: <b>로그인 필요</b></div>
+        <button class="btn ghost small" id="btn-logout" style="display:none">로그아웃</button>
+        <div class="pill small">데이터 저장(미연결): <b>LocalStorage</b></div>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap" style="margin-top:24px; margin-bottom:40px;">
+    <!-- 🔐 로그인 화면 -->
+    <section class="card" id="view-login">
+      <h2>로그인</h2>
+      <p class="small muted" style="margin-bottom:10px;">CampusBadge Demo에 로그인하세요.</p>
+      <div class="row row-2">
+        <div style="grid-column:1/-1">
+          <label for="login-username">아이디</label>
+          <input id="login-username" placeholder="ID를 입력하세요" autocomplete="username" />
+        </div>
+        <div style="grid-column:1/-1">
+          <label for="login-password">비밀번호</label>
+          <input id="login-password" type="password" placeholder="비밀번호를 입력하세요" autocomplete="current-password" />
+        </div>
+      </div>
+      <div class="hr"></div>
+      <div class="flex">
+        <button class="btn ghost" id="btn-go-register">회원가입</button>
+        <span class="right"></span>
+        <button class="btn" id="btn-login">로그인</button>
+      </div>
+    </section>
+
+    <!-- 📝 회원가입 화면 -->
+    <section class="card" id="view-register" hidden>
+      <h2>회원가입</h2>
+      <p class="small muted" style="margin-bottom:10px;">데모용 계정은 브라우저 LocalStorage에만 저장됩니다.</p>
+      <div class="row row-2">
+        <div style="grid-column:1/-1">
+          <label for="signup-username">아이디</label>
+          <input id="signup-username" placeholder="ID를 입력하세요" />
+        </div>
+        <div style="grid-column:1/-1">
+          <label for="signup-password">비밀번호</label>
+          <input id="signup-password" type="password" placeholder="비밀번호를 입력하세요" />
+        </div>
+        <div style="grid-column:1/-1">
+          <label for="signup-email">E-mail</label>
+          <input id="signup-email" type="email" placeholder="이메일을 입력하세요" />
+        </div>
+        <div style="grid-column:1/-1">
+          <label for="signup-nickname">닉네임</label>
+          <input id="signup-nickname" placeholder="닉네임을 입력하세요" />
+        </div>
+        <div style="grid-column:1/-1">
+          <label for="signup-role">역할</label>
+          <select id="signup-role">
+            <option value="user">일반 유저</option>
+            <option value="admin">관리자</option>
+          </select>
+        </div>
+            <!-- 관리자일 경우 직접 지갑 입력 -->
+        <div style="grid-column:1/-1" id="admin-wallet-field" hidden>
+          <label for="signup-wallet">관리자 지갑 주소</label>
+          <input id="signup-wallet" placeholder="0x로 시작하는 지갑 주소를 입력하세요" />
+        </div>
+      </div>
+      <div class="hr"></div>
+      <div class="flex">
+        <button class="btn ghost" id="btn-go-login">로그인으로 돌아가기</button>
+        <span class="right"></span>
+        <button class="btn ok" id="btn-signup">회원가입 완료</button>
+      </div>
+    </section>
+
+    <!-- 🧩 메인 DApp 화면 (로그인 후) -->
+    <section id="view-main" hidden>
+      <!-- 간단한 환영 카드 -->
+      <section class="card" style="margin-bottom:16px">
+        <div class="flex">
+          <h2>대시보드</h2>
+          <span class="pill right small" id="welcome-text">로그인 정보 불러오는 중...</span>
+        </div>
+        <p class="small muted" style="margin-top:8px;">
+          역할에 따라 화면이 다르게 보입니다. (관리자: 대시보드 / 일반 유저: 인증서 요청 + 기업 검증)
+        </p>
+      </section>
+
+      <div class="grid grid-2" id="app">
+        <!-- 체인 연결 섹션 -->
+        <section class="card" style="grid-column:1/-1" id="sec-chain">
+          <div class="flex">
+            <h2>체인 연결(선택)</h2>
+            <span class="pill right">Ethers v6 · MetaMask</span>
+          </div>
+          <div class="row row-3">
+            <div>
+              <label>컨트랙트 주소 (CampusCertNFT)</label>
+              <input id="chain-address" placeholder="0x..." />
+            </div>
+            <div>
+              <label>네트워크(체인ID)</label>
+              <input id="chain-id" placeholder="31337 / 11155420(OP Sepolia) / 10(OP Main)" />
+            </div>
+            <div class="flex" style="align-items:end">
+              <button class="btn" id="btn-connect">지갑 연결</button>
+              <button class="btn ghost" id="btn-disconnect">해제</button>
+            </div>
+          </div>
+          <div class="small muted" id="whoami">지갑 미연결</div>
+        </section>
+
+        <!-- 좌: 신청/작성 (일반 유저 전용) -->
+        <section class="card" id="sec-request">
+          <div class="flex">
+            <h2>① 인증서 요청 만들기</h2>
+            <span class="pill right">신청자 화면</span>
+          </div>
+          <p class="muted small">
+            지갑 미연결: 로컬 <b>Pending</b> 저장 · 지갑 연결+TokenURI 있으면
+            <b>createRequest(beneficiary, tokenURI)</b> 온체인 호출
+          </p>
+
+          <div class="row row-2">
+            <div>
+              <label>인증서 이름 (name)</label>
+              <input id="f-name" placeholder="예) 봉사활동 인증서" />
+            </div>
+            <div>
+              <label>발급기관 (Issuer)</label>
+              <input id="f-issuer" placeholder="Ajou Univ." value="Ajou Univ." />
+            </div>
+
+            <div class="row-2" style="grid-column:1/-1">
+              <div>
+                <label>이미지/PDF CID 또는 URL (image)</label>
+                <input id="f-image" placeholder="ipfs://bafy... 또는 https://..." />
+              </div>
+              <div>
+                <label>CertificateID</label>
+                <input id="f-certid" placeholder="SCH-2025-0001" />
+              </div>
+            </div>
+
+            <div class="row-3" style="grid-column:1/-1">
+              <div>
+                <!-- ★ beneficiary 의미로 변경 -->
+                <label>Beneficiary (수혜자 지갑 주소)</label>
+                <input id="f-issuedto" placeholder="0x로 시작하는 지갑 주소" />
+              </div>
+              <div>
+                <label>StudentID</label>
+                <input id="f-studentid" placeholder="2023xxxxxx" />
+              </div>
+              <div>
+                <label>IssuedAt (발급일)</label>
+                <input id="f-issuedat" type="date" />
+              </div>
+            </div>
+
+            <div style="grid-column:1/-1">
+              <label>설명 (description)</label>
+              <textarea id="f-desc" placeholder="내용을 간단히 적어주세요. (학생 이름 등은 여기 적어도 됩니다)"></textarea>
+            </div>
+
+            <div style="grid-column:1/-1">
+              <label>TokenURI (메타데이터 CID, 온체인 전송용)</label>
+              <input id="f-tokenuri" placeholder="ipfs://bafy..." />
+            </div>
+          </div>
+
+          <div class="hr"></div>
+
+          <div class="flex">
+            <button class="btn" id="btn-preview">메타데이터 미리보기</button>
+            <button class="btn ghost" id="btn-download">메타데이터 JSON 다운로드</button>
+            <span class="right"></span>
+            <button class="btn ok" id="btn-create">요청 생성</button>
+          </div>
+        </section>
+
+        <!-- 우: 도움/요약 (공통) -->
+        <aside class="card" id="sec-help">
+          <h2>가이드 & 상태</h2>
+          <div class="tabbar" style="margin:6px 0 10px">
+            <button class="active" data-tab="t1">요약</button>
+            <button data-tab="t2">데이터 규격</button>
+            <button data-tab="t3">주의사항</button>
+          </div>
+          <div id="tab-t1">
+            <p class="small muted">
+              이 페이지는 <b>온체인/로컬 겸용</b> 데모입니다. 지갑 연결 시 CampusCertNFT 컨트랙트의
+              <code>createRequest/approve/reject/mintNFT</code>를 호출합니다.
+            </p>
+            <ul class="small">
+              <li>① 입력 → (지갑 O) <code>createRequest(beneficiary, tokenURI)</code> / (지갑 X) 로컬 Pending 생성</li>
+              <li>② 관리자 승인/반려/민팅: onlyOwner 계정 필요(지갑 X면 로컬 상태변경)</li>
+              <li>③ “기업 검증” 탭: 로컬 데이터 기준의 모의 조회</li>
+            </ul>
+          </div>
+          <div id="tab-t2" hidden>
+            <p class="small">권장 메타데이터(JSON):</p>
+            <pre class="small">{
+  "name": "봉사활동 인증서",
+  "description": "교내 봉사활동 10시간",
+  "image": "ipfs://&lt;IMAGE_CID&gt;",
+  "attributes": [
+    {"trait_type":"IssuedTo","value":"0x... (수혜자 지갑 주소)"},
+    {"trait_type":"StudentID","value":"2023xxxxx"},
+    {"trait_type":"IssuedAt","value":"2025-10-05"},
+    {"trait_type":"Issuer","value":"Ajou Univ."},
+    {"trait_type":"CertificateID","value":"SCH-2025-0001"}
+  ]
+}</pre>
+          </div>
+          <div id="tab-t3" hidden>
+            <ul class="small">
+              <li>컨트랙트 소유자만 승인/반려/민팅 가능(onlyOwner).</li>
+              <li>로컬 테이블은 브라우저 저장소 기반이라 지우면 사라집니다.</li>
+              <li>온체인 목록 조회는 <code>requestCount()</code> / <code>requests(id)</code> 뷰 함수에 의존합니다.</li>
+            </ul>
+          </div>
+        </aside>
+
+        <!-- 관리자 (관리자 계정 전용) -->
+        <section class="card" style="grid-column:1/-1" id="sec-admin">
+          <div class="flex">
+            <h2>② 관리자 대시보드</h2>
+            <span class="pill right">지갑 연결+소유자면 온체인 · 아니면 로컬</span>
+          </div>
+
+          <div class="flex" style="margin-bottom:8px">
+            <div class="flex" style="gap:6px">
+              <button class="btn ghost" id="btn-refresh">목록 새로고침</button>
+              <button class="btn ghost" id="btn-export">CSV 내보내기</button>
+              <button class="btn err" id="btn-clear">모든 데이터 삭제(로컬)</button>
+            </div>
+            <span class="right small muted">요청 수: <b id="count-total">0</b> 건</span>
+          </div>
+
+          <div class="hr"></div>
+
+          <div class="row row-3">
+            <div>
+              <label>상태 필터</label>
+              <select id="filter-status">
+                <option value="">전체</option>
+                <option value="Pending">Pending</option>
+                <option value="Minted">Minted</option>
+                <option value="Rejected">Rejected</option>
+                <option value="Revoked">Revoked</option>
+              </select>
+            </div>
+            <div>
+              <!-- ★ beneficiary 검색도 포함 -->
+              <label>검색 (CertificateID / StudentID / IssuedTo / Beneficiary)</label>
+              <input id="filter-q" placeholder="예) SCH-2025-0001, 2023xxxx, 0x..." />
+            </div>
+            <div class="flex" style="align-items:end">
+              <button class="btn" id="btn-apply">필터 적용</button>
+              <button class="btn ghost" id="btn-reset">초기화</button>
+            </div>
+          </div>
+
+          <div class="hr"></div>
+
+          <div style="overflow:auto">
+            <table class="table" id="tbl">
+              <thead>
+                <tr>
+                  <th>RequestID</th>
+                  <th>CertificateID</th>
+                  <th>StudentID</th>
+                  <th>IssuedTo (Beneficiary)</th>
+                  <th>Status</th>
+                  <th>IssuedAt</th>
+                  <th>액션</th>
+                </tr>
+              </thead>
+              <tbody id="tbody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- 기업 검증 (일반 유저 전용) -->
+        <section class="card" style="grid-column:1/-1" id="sec-verify">
+          <div class="flex">
+            <h2>③ 기업 검증(조회) 포털 – 데모</h2>
+            <span class="pill right">LocalStorage 기반 모의 검증</span>
+          </div>
+          <div class="row row-3">
+            <div>
+              <label>CertificateID</label>
+              <input id="v-certid" placeholder="SCH-2025-0001" />
+            </div>
+            <div>
+              <label>StudentID</label>
+              <input id="v-studentid" placeholder="2023xxxxxx" />
+            </div>
+            <div>
+              <!-- 여기서도 IssuedTo를 지갑주소 기준으로 -->
+              <label>IssuedTo / Beneficiary (지갑 주소)</label>
+              <input id="v-issuedto" placeholder="0x..." />
+            </div>
+          </div>
+          <div class="flex" style="margin-top:10px">
+            <button class="btn" id="btn-verify">조회</button>
+            <span class="small muted right">※ 실제 검증은 온체인 이벤트/서명 검증 또는 서버 API 사용</span>
+          </div>
+          <div id="verify-result" style="margin-top:12px"></div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <!-- Dialog: Preview -->
+  <dialog id="dlg">
+    <div class="dlg-head">메타데이터 미리보기</div>
+    <div class="dlg-body">
+      <pre id="preview-box">{}</pre>
+      <div class="flex" style="margin-top:10px">
+        <button class="btn ghost" id="dlg-close">닫기</button>
+        <button class="btn right" id="dlg-copy">JSON 복사</button>
+      </div>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast"></div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
