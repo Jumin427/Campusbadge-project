@@ -16,7 +16,7 @@ import { BrowserProvider, Contract } from "ethers";
 const $ = <T extends Element = Element>(sel: string) => document.querySelector(sel) as T;
 const $$ = (sel: string) => document.querySelectorAll(sel);
 const today = () => new Date().toISOString().slice(0, 10);
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE = import.meta.env.VITE_API_BASE as string;
 
 // 토스트
 const TOAST = (() => {
