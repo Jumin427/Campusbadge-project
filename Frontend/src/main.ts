@@ -5,8 +5,7 @@
   사전 준비
   1) npm i ethers
   2) .env.local 에 아래 추가 (데모/개발용. 운영은 서버 프록시 권장)
-     VITE_INFURA_IPFS_PROJECT_ID=xxxxxxxx
-     VITE_INFURA_IPFS_PROJECT_SECRET=yyyyyyyy
+     VITE_PINATA_JWT=eyJhbGciOi...
 */
 
 import type { ContractTransactionReceipt, InterfaceAbi } from "ethers";
@@ -141,27 +140,40 @@ let signer: any = null; // JsonRpcSigner
 let contract: CampusContract | null = null;
 let ownerAddr: string | null = null;
 
-// ---------- IPFS (Infura) ----------
-const INFURA_PID = import.meta.env.VITE_INFURA_IPFS_PROJECT_ID as string;
-const INFURA_PSEC = import.meta.env.VITE_INFURA_IPFS_PROJECT_SECRET as string;
-const INFURA_IPFS_ADD = "https://ipfs.infura.io:5001/api/v0/add?pin=true";
+// ---------- IPFS (Pinata) ----------
+const PINATA_JWT = import.meta.env.VITE_PINATA_JWT as string;
+const PINATA_JSON_ENDPOINT = "https://api.pinata.cloud/pinning/pinJSONToIPFS";
 
-async function uploadJSONToIPFSViaInfura(obj: any, filename = "metadata.json"): Promise<string> {
-  if (!INFURA_PID || !INFURA_PSEC) throw new Error("Missing Infura IPFS env (VITE_INFURA_IPFS_PROJECT_ID/SECRET)");
-  const form = new FormData();
-  const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" });
-  form.append("file", blob, filename);
+async function uploadJSONToIPFSViaPinata(obj: any, filename = "metadata.json"): Promise<string> {
+  if (!PINATA_JWT) {
+    throw new Error("Missing Pinata JWT (VITE_PINATA_JWT)");
+  }
 
-  const auth = btoa(`${INFURA_PID}:${INFURA_PSEC}`);
-  const res = await fetch(INFURA_IPFS_ADD, { method: "POST", headers: { Authorization: `Basic ${auth}` }, body: form });
-  const txt = await res.text();
-  if (!res.ok) throw new Error(`IPFS upload failed: ${res.status} ${txt}`);
-  // 다중 라인 JSON 대비
-  const lastLine = txt.trim().split("\n").pop()!;
-  const { Hash } = JSON.parse(lastLine); // { Name, Hash, Size }
-  return Hash as string; // CID
+  const body = {
+    pinataMetadata: { name: filename },
+    pinataContent: obj,
+  };
+
+  const res = await fetch(PINATA_JSON_ENDPOINT, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${PINATA_JWT}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(`Pinata upload failed: ${res.status} ${JSON.stringify(data)}`);
+  }
+
+  const cid = data.IpfsHash as string;
+  return cid;
 }
+
 const tokenUriFromCid = (cid: string) => `ipfs://${cid}`;
+
 
 // ---------- 유틸리티 ----------
 function isOwner(addr?: string | null): boolean {
@@ -524,7 +536,7 @@ function download(filename: string, text: string): void {
       TOAST.show("IPFS 업로드 중...");
       const meta = buildMetadata(f);
       const filename = (f.certificateId || "metadata") + ".json";
-      const cid = await uploadJSONToIPFSViaInfura(meta, filename);
+      const cid = await uploadJSONToIPFSViaPinata(meta, filename);
       tokenURI = tokenUriFromCid(cid);
       ($("#f-tokenuri") as HTMLInputElement).value = tokenURI;
       TOAST.show(`IPFS 업로드 완료: ${cid}`);
@@ -700,7 +712,7 @@ async function renderTable(): Promise<void> {
         <td class="small">
           <button class="btn ok" data-approve="${it.id}" ${it.status !== "Pending" ? "disabled" : ""}>승인</button>
           <button class="btn warn" data-reject="${it.id}" ${it.status !== "Pending" ? "disabled" : ""}>반려</button>
-          <button class="btn" data-mint="${it.id}" ${it.status !== "Pending" ? "" : "disabled"}>민팅</button>
+          <button class="btn" data-mint="${it.id}" ${it.status !== "Pending" ? "disabled" : ""}>민팅</button>
           <button class="btn err" data-revoke="${it.id}" ${it.status !== "Minted" ? "disabled" : ""}>회수</button>
         </td>
       </tr>`;
