@@ -12,6 +12,7 @@ origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "http://192.168.0.13:5173",  # 같은 PC에서 IP로 접속할 가능성 대비
+    "https://profound-figolla-222f8c.netlify.app"  # 지금 Netlify 주소
 ]
 
 app.add_middleware(
