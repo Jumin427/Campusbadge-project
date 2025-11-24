@@ -3,5 +3,6 @@ uvicorn[standard]
 SQLAlchemy
 psycopg2-binary
 python-dotenv
-passlib[bcrypt]
+bcrypt==4.1.2
+passlib[bcrypt]==1.7.4
 email-validator
