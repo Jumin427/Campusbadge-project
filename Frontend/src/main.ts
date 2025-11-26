@@ -327,27 +327,41 @@ function applyAuthUI(): void {
 
 // ---------- 폼 & 메타데이터 ----------
 function collectForm() {
+  const current = authGetCurrent();
+  const wallet = (current?.wallet_address || "").trim();
+
+  const imageSelect = $("#f-image-category") as HTMLSelectElement | null;
+  const image = imageSelect ? imageSelect.value.trim() : "";
+
   const f = {
     name: ($("#f-name") as HTMLInputElement).value.trim(),
     issuer: ($("#f-issuer") as HTMLInputElement).value.trim(),
-    image: ($("#f-image") as HTMLInputElement).value.trim(),
+    image,
     certificateId: ($("#f-certid") as HTMLInputElement).value.trim(),
-    issuedTo: ($("#f-issuedto") as HTMLInputElement).value.trim(),
+    // beneficiary / IssuedTo 는 로그인 계정의 지갑 주소로 자동 설정
+    issuedTo: wallet,
     studentId: ($("#f-studentid") as HTMLInputElement).value.trim(),
     issuedAt: ($("#f-issuedat") as HTMLInputElement).value || today(),
-    description: ($("#f-desc") as HTMLTextAreaElement).value.trim(),
     tokenURI: ($("#f-tokenuri") as HTMLInputElement).value.trim(),
   };
   return f;
 }
 
 function buildMetadata(f: ReturnType<typeof collectForm>): Metadata {
-  const image = f.image.startsWith("ipfs://") || f.image.startsWith("http")
-    ? f.image
-    : (f.image ? "ipfs://" + f.image : "");
+  const image = f.image
+    ? (f.image.startsWith("ipfs://") || f.image.startsWith("http")
+        ? f.image
+        : "ipfs://" + f.image)
+    : "";
+
+  // 설명은 사용자 입력 대신, name 기반 기본 문구
+  const description = f.name
+    ? `${f.name} – CampusBadge 인증서`
+    : "CampusBadge 인증서";
+
   return {
     name: f.name || "Campus Certificate",
-    description: f.description || "University certificate issued as NFT",
+    description,
     image,
     attributes: [
       f.issuedTo ? { trait_type: "IssuedTo", value: f.issuedTo } : null,
@@ -527,6 +541,11 @@ function download(filename: string, text: string): void {
     return;
   }
 
+  if (!current.wallet_address) {
+    TOAST.show("계정에 등록된 지갑 주소가 없습니다. 관리자에게 문의하세요.");
+    return;
+  }
+
   const f = collectForm();
   let tokenURI = f.tokenURI;
 
@@ -550,20 +569,11 @@ function download(filename: string, text: string): void {
   // 온체인 모드
   if (contract && tokenURI) {
     try {
-      // ★ beneficiary 지정 로직
-      // - 폼의 IssuedTo에 주소를 넣으면 그 주소로 발급
-      // - 비어 있으면 현재 연결된 지갑 주소로 발급
-      let beneficiary = f.issuedTo;
-      if (!beneficiary && signer) {
-        beneficiary = await signer.getAddress();
-      }
-      if (!beneficiary) {
-        TOAST.show("beneficiary 지갑 주소가 필요합니다 (발급 대상 주소 또는 지갑 연결)");
-        return;
-      }
+      // ★ beneficiary = 로그인 계정에 저장된 지갑 주소
+      const beneficiary = current.wallet_address;
 
       TOAST.show("요청 트랜잭션 전송...");
-      const tx = await contract.createRequest(beneficiary, tokenURI); // ★ 변경
+      const tx = await contract.createRequest(beneficiary, tokenURI);
       const rc = await tx.wait();
       const ev = (rc?.logs || [])
         .map(l => contract!.interface.parseLog(l))
