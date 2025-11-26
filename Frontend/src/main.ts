@@ -89,21 +89,20 @@ export type RequestRow = {
 export const ABI: InterfaceAbi = [
   // view (온체인 대시보드용)
   "function requestCount() view returns (uint256)",
-  // ★ beneficiary 필드 포함 버전
+  // beneficiary 필드 포함 버전
   "function requests(uint256) view returns (address requester, address beneficiary, string tokenURI, uint8 status)",
 
   // ownable
   "function owner() view returns (address)",
 
   // write
-  // ★ createRequest 시그니처 변경 (address beneficiary, string tokenURI)
+  // createRequest(address beneficiary, string tokenURI)
   "function createRequest(address beneficiary, string tokenURI) external returns (uint256)",
   "function approveRequest(uint256 requestId) external",
   "function rejectRequest(uint256 requestId, string reason) external",
   "function mintNFT(uint256 requestId) external returns (uint256)",
 
   // events
-  // ★ beneficiary 인자 추가
   "event RequestCreated(uint256 indexed requestId, address indexed requester, address indexed beneficiary, string tokenURI)",
   "event RequestApproved(uint256 indexed requestId)",
   "event RequestRejected(uint256 indexed requestId, string reason)",
@@ -174,7 +173,6 @@ async function uploadJSONToIPFSViaPinata(obj: any, filename = "metadata.json"): 
 
 const tokenUriFromCid = (cid: string) => `ipfs://${cid}`;
 
-
 // ---------- 유틸리티 ----------
 function isOwner(addr?: string | null): boolean {
   return !!ownerAddr && !!addr && ownerAddr.toLowerCase() === addr.toLowerCase();
@@ -190,8 +188,12 @@ function statusBadge(s: RequestRow["status"]): string {
   const map: Record<string, string> = { Pending: "s-pending", Approved: "s-pending", Rejected: "s-rejected", Minted: "s-minted", Revoked: "s-revoked" };
   return `<span class="status ${map[s] || ""}">${s}</span>`;
 }
+function ipfsToHttp(uri?: string): string {
+  if (!uri) return "";
+  return uri.startsWith("ipfs://") ? uri.replace("ipfs://", "https://ipfs.io/ipfs/") : uri;
+}
 
-// ---------- 화면 전환 (login / register / main) ----------
+// ---------- 화면 전환 (login / register / main + home/mypage) ----------
 type View = "login" | "register" | "main";
 function setView(v: View): void {
   const loginSec = $("#view-login") as HTMLElement;
@@ -200,6 +202,20 @@ function setView(v: View): void {
   loginSec.hidden = v !== "login";
   regSec.hidden = v !== "register";
   mainSec.hidden = v !== "main";
+}
+
+type MainPage = "home" | "mypage";
+function setMainPage(p: MainPage): void {
+  const home = $("#page-home") as HTMLElement;
+  const my = $("#page-mypage") as HTMLElement;
+  if (p === "home") {
+    home.hidden = false;
+    my.hidden = true;
+  } else {
+    home.hidden = true;
+    my.hidden = false;
+    void renderMyPage();
+  }
 }
 
 // ---------- 체인 연결 ----------
@@ -276,21 +292,23 @@ function autoConnectChain(): void {
 function applyAuthUI(): void {
   const loginPill = $("#login-pill") as HTMLDivElement;
   const logoutBtn = $("#btn-logout") as HTMLButtonElement;
+  const myBtn = $("#btn-mypage") as HTMLButtonElement;
 
   const secRequest = $("#sec-request") as HTMLElement;
   const secAdmin   = $("#sec-admin") as HTMLElement;
-  const secVerify  = $("#sec-verify") as HTMLElement;
   const welcome    = $("#welcome-text") as HTMLSpanElement;
 
-  const currentUser = authGetCurrent();   // ← 항상 여기서만 유저 가져오기
+  const currentUser = authGetCurrent();
 
   // 로그인 안 된 상태
   if (!currentUser) {
     setView("login");
     loginPill.innerHTML = '계정: <b>로그인 필요</b>';
     logoutBtn.style.display = "none";
+    myBtn.style.display = "none";
     welcome.textContent = "게스트";
     disconnectChain();
+    setMainPage("home");
     return;
   }
 
@@ -305,23 +323,25 @@ function applyAuthUI(): void {
 
   loginPill.innerHTML = `계정: <b>${displayName}</b> (${isAdmin ? "관리자" : "일반 유저"})${walletInfo}`;
   logoutBtn.style.display = "inline-flex";
+  myBtn.style.display = "inline-flex";
   welcome.textContent = `${displayName} · 역할: ${isAdmin ? "관리자" : "일반 유저"}`;
 
-  // 역할별 섹션 토글
+  // 역할별 섹션 토글 (기업검증 제거, 요청/관리자만)
   if (isAdmin) {
     secAdmin.style.display   = "";
     secRequest.style.display = "none";
-    secVerify.style.display  = "none";
   } else {
     secAdmin.style.display   = "none";
     secRequest.style.display = "";
-    secVerify.style.display  = "";
   }
 
   // 로그인 이후 자동 체인 연결
   if (!provider) {
     autoConnectChain();
   }
+
+  // 로그인 시 기본 화면은 대시보드
+  setMainPage("home");
 }
 
 
@@ -460,7 +480,6 @@ function download(filename: string, text: string): void {
   const password = ($("#signup-password") as HTMLInputElement).value.trim();
   const email = ($("#signup-email") as HTMLInputElement).value.trim();
   const nickname = ($("#signup-nickname") as HTMLInputElement).value.trim();
-  // const role     = ( $("#signup-role") as HTMLSelectElement ).value as AuthRole;
   // 현재 백엔드 /auth/register 는 role을 받지 않고 기본 USER로 만듦
   const role = ($("#signup-role") as HTMLSelectElement).value;
   const adminWallet = ($("#signup-wallet") as HTMLInputElement).value.trim();
@@ -475,7 +494,6 @@ function download(filename: string, text: string): void {
     payload.wallet_address = adminWallet;
   }
 
-
   if (!username || !password || !email || !nickname) {
     TOAST.show("필수 항목을 모두 입력하세요.");
     return;
@@ -485,9 +503,8 @@ function download(filename: string, text: string): void {
     const res = await fetch(`${API_BASE}/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),   // payload 사용!
+      body: JSON.stringify(payload),
     });
-
 
     if (!res.ok) {
       let msg = "회원가입 실패";
@@ -512,6 +529,16 @@ function download(filename: string, text: string): void {
   disconnectChain();
   TOAST.show("로그아웃 되었습니다.");
   applyAuthUI();
+});
+
+// 헤더 마이페이지 버튼
+($("#btn-mypage") as HTMLButtonElement).addEventListener("click", () => {
+  setMainPage("mypage");
+});
+// 마이페이지 내 "대시보드로" 버튼
+($("#btn-mypage-back") as HTMLButtonElement).addEventListener("click", (e) => {
+  e.preventDefault();
+  setMainPage("home");
 });
 
 // ---------- 미리보기/다운로드 ----------
@@ -569,7 +596,6 @@ function download(filename: string, text: string): void {
   // 온체인 모드
   if (contract && tokenURI) {
     try {
-      // ★ beneficiary = 로그인 계정에 저장된 지갑 주소
       const beneficiary = current.wallet_address;
 
       TOAST.show("요청 트랜잭션 전송...");
@@ -611,7 +637,7 @@ const COUNT = $("#count-total") as HTMLSpanElement;
 type OnchainRow = {
   requestId: number;
   requester: string;
-  beneficiary: string; // ★ 추가
+  beneficiary: string;
   tokenURI: string;
   status: RequestRow["status"];
   issuedAt?: string;
@@ -619,6 +645,8 @@ type OnchainRow = {
   certId?: string;
   studentId?: string;
   issuedTo?: string;
+  image?: string;
+  issuer?: string;
 };
 
 async function fetchOnchainRows(): Promise<OnchainRow[]> {
@@ -632,22 +660,24 @@ async function fetchOnchainRows(): Promise<OnchainRow[]> {
     const row: OnchainRow = {
       requestId: i,
       requester: r.requester,
-      beneficiary: r.beneficiary, // ★ 추가
+      beneficiary: r.beneficiary,
       tokenURI: r.tokenURI,
       status: statusFromU8(Number(r.status)),
     };
-    // 메타데이터 일부 필드 채우기(선택)
+    // 메타데이터 일부 필드 채우기
     try {
       if (row.tokenURI?.startsWith("ipfs://")) {
         const url = row.tokenURI.replace("ipfs://", "https://ipfs.io/ipfs/");
         const meta = await fetch(url, { cache: "no-store" }).then(r => r.json());
         row.name = meta?.name || "";
+        row.image = meta?.image || "";
         const attrs = Array.isArray(meta?.attributes) ? meta.attributes : [];
         const val = (k: string) => attrs.find((a: any) => a?.trait_type === k)?.value || "";
         row.certId = val("CertificateID");
         row.studentId = val("StudentID");
         row.issuedTo = val("IssuedTo");
         row.issuedAt = val("IssuedAt");
+        row.issuer = val("Issuer");
       }
     } catch {
       // ignore
@@ -670,7 +700,7 @@ async function renderTable(): Promise<void> {
     const filt = list.filter(it => {
       const hitStatus = s ? (it.status === s) : true;
       const hay = [String(it.requestId), it.certId || "", it.studentId || "", it.issuedTo || "", it.name || "", it.beneficiary || ""]
-        .join(" ").toLowerCase(); // ★ beneficiary도 검색 대상에 포함
+        .join(" ").toLowerCase();
       const hitQ = q ? hay.includes(q) : true;
       return hitStatus && hitQ;
     });
@@ -751,7 +781,7 @@ T_BODY.addEventListener("click", async (e) => {
         const data: any = {
           requestId: rid,
           requester: r.requester,
-          beneficiary: r.beneficiary, // ★ 프리뷰에도 표시
+          beneficiary: r.beneficiary,
           tokenURI: r.tokenURI,
           status: statusFromU8(Number(r.status))
         };
@@ -850,6 +880,110 @@ async function mutateOnchain(reqId: number, op: "approve" | "reject" | "mint"): 
 ($("#btn-clear") as HTMLButtonElement).addEventListener("click", () => {
   if (confirm("모든 로컬 데이터를 삭제할까요?")) { localStorage.removeItem(DB_KEY); void renderTable(); TOAST.show("삭제 완료"); }
 });
+
+// ---------- 마이페이지 렌더링 ----------
+async function renderMyPage(): Promise<void> {
+  const current = authGetCurrent();
+  const info = $("#mypage-wallet-info") as HTMLParagraphElement;
+  const listEl = $("#mypage-list") as HTMLDivElement;
+  const emptyEl = $("#mypage-empty") as HTMLDivElement;
+
+  listEl.innerHTML = "";
+  emptyEl.style.display = "none";
+
+  if (!current) {
+    info.textContent = "로그인 정보가 없습니다. 먼저 로그인 해 주세요.";
+    emptyEl.style.display = "block";
+    return;
+  }
+
+  const wallet = (current.wallet_address || "").trim().toLowerCase();
+  if (!wallet) {
+    info.textContent = "이 계정에는 지갑 주소가 등록되어 있지 않습니다.";
+    emptyEl.style.display = "block";
+    return;
+  }
+
+  info.innerHTML = `지갑 주소 <span style="font-family:monospace">${wallet.slice(0, 6)}…${wallet.slice(-4)}</span> 기준으로 요청/발급된 인증서를 표시합니다.`;
+
+  type MyCert = {
+    id: string;
+    status: RequestRow["status"];
+    name: string;
+    issuer: string;
+    image?: string;
+    tokenURI?: string;
+    certId?: string;
+    studentId?: string;
+    issuedAt?: string;
+  };
+
+  let certs: MyCert[] = [];
+
+  if (contract) {
+    const rows = await fetchOnchainRows();
+    certs = rows
+      .filter(r => r.beneficiary && r.beneficiary.toLowerCase() === wallet)
+      .map(r => ({
+        id: `#${r.requestId}`,
+        status: r.status,
+        name: r.name || "(이름 없음)",
+        issuer: r.issuer || "",
+        image: r.image,
+        tokenURI: r.tokenURI,
+        certId: r.certId || "",
+        studentId: r.studentId || "",
+        issuedAt: r.issuedAt || "",
+      }));
+  } else {
+    const rows = db_load();
+    certs = rows
+      .filter(r => {
+        const meta = r.meta;
+        const to = attr(meta, "IssuedTo")?.toLowerCase() || "";
+        return wallet && to === wallet;
+      })
+      .map(r => ({
+        id: r.id,
+        status: r.status,
+        name: r.meta.name || "(이름 없음)",
+        issuer: attr(r.meta, "Issuer") || "",
+        image: r.meta.image,
+        tokenURI: undefined, // 로컬에선 CID를 별도로 저장하지 않음
+        certId: attr(r.meta, "CertificateID") || "",
+        studentId: attr(r.meta, "StudentID") || "",
+        issuedAt: attr(r.meta, "IssuedAt") || "",
+      }));
+  }
+
+  if (!certs.length) {
+    emptyEl.style.display = "block";
+    return;
+  }
+
+  listEl.innerHTML = certs.map(c => {
+    const img = ipfsToHttp(c.image);
+    const cid = c.tokenURI?.startsWith("ipfs://")
+      ? c.tokenURI.slice("ipfs://".length)
+      : (c.tokenURI || "");
+    return `
+      <article class="card" style="padding:12px;">
+        <div class="row" style="gap:8px">
+          ${img ? `<div><img src="${img}" alt="${c.name}" style="width:100%;border-radius:12px;max-height:180px;object-fit:cover"/></div>` : ""}
+          <div>
+            <div class="small muted">${c.certId || c.id}</div>
+            <h3 style="margin:4px 0 4px;font-size:15px;">${c.name}</h3>
+            <div class="small muted">발급기관: ${c.issuer || "-"}</div>
+            <div class="small muted">학번: ${c.studentId || "-"}</div>
+            <div class="small muted">발급일: ${c.issuedAt || "-"}</div>
+            <div class="small muted">상태: ${statusBadge(c.status)}</div>
+            ${cid ? `<div class="small" style="margin-top:4px;word-break:break-all;">CID: <code>${cid}</code></div>` : ""}
+          </div>
+        </div>
+      </article>
+    `;
+  }).join("");
+}
 
 // ---------- 이벤트 구독(온체인) ----------
 function wireEvents(): void {

@@ -83,8 +83,8 @@
       </div>
       <div class="right flex" style="gap:8px">
         <div class="pill" id="login-pill">계정: <b>로그인 필요</b></div>
+        <button class="btn ghost small" id="btn-mypage" style="display:none">마이페이지</button>
         <button class="btn ghost small" id="btn-logout" style="display:none">로그아웃</button>
-        <div class="pill small">데이터 저장(미연결): <b>LocalStorage</b></div>
       </div>
     </div>
   </header>
@@ -156,136 +156,138 @@
 
     <!-- 🧩 메인 DApp 화면 (로그인 후) -->
     <section id="view-main" hidden>
-      <!-- 간단한 환영 카드 -->
+      <!-- 상단 요약 카드 -->
       <section class="card" style="margin-bottom:16px">
         <div class="flex">
           <h2>대시보드</h2>
           <span class="pill right small" id="welcome-text">로그인 정보 불러오는 중...</span>
         </div>
         <p class="small muted" style="margin-top:8px;">
-          역할에 따라 화면이 다르게 보입니다. (관리자: 대시보드 / 일반 유저: 인증서 요청 + 기업 검증)
+          역할에 따라 화면이 다르게 보입니다. (관리자: 대시보드 / 일반 유저: 인증서 요청)
         </p>
       </section>
 
-      <div class="grid grid-2" id="app">
-        <!-- 체인 연결 섹션 -->
-        <section class="card" style="grid-column:1/-1" id="sec-chain">
-          <div class="flex">
-            <h2>체인 연결(선택)</h2>
-            <span class="pill right">Ethers v6 · MetaMask</span>
-          </div>
-          <div class="row row-3">
-            <div>
-              <label>컨트랙트 주소 (CampusCertNFT)</label>
-              <input id="chain-address" placeholder="0x..." />
+      <!-- 홈 페이지(기존 기능) -->
+      <section id="page-home">
+        <div class="grid grid-2" id="app">
+          <!-- 체인 연결 섹션 -->
+          <section class="card" style="grid-column:1/-1" id="sec-chain">
+            <div class="flex">
+              <h2>체인 연결(선택)</h2>
+              <span class="pill right">Ethers v6 · MetaMask</span>
             </div>
-            <div>
-              <label>네트워크(체인ID)</label>
-              <input id="chain-id" placeholder="31337 / 11155420(OP Sepolia) / 10(OP Main)" />
-            </div>
-            <div class="flex" style="align-items:end">
-              <button class="btn" id="btn-connect">지갑 연결</button>
-              <button class="btn ghost" id="btn-disconnect">해제</button>
-            </div>
-          </div>
-          <div class="small muted" id="whoami">지갑 미연결</div>
-        </section>
-
-        <!-- 좌: 신청/작성 (일반 유저 전용) -->
-        <section class="card" id="sec-request">
-          <div class="flex">
-            <h2>① 인증서 요청 만들기</h2>
-            <span class="pill right">신청자 화면</span>
-          </div>
-          <p class="muted small">
-            지갑 미연결: 로컬 <b>Pending</b> 저장 · 지갑 연결+TokenURI 있으면
-            <b>createRequest(beneficiary, tokenURI)</b> 온체인 호출
-          </p>
-
-          <div class="row row-2">
-            <div>
-              <label>인증서 이름 (name)</label>
-              <input id="f-name" placeholder="예) 봉사활동 인증서" />
-            </div>
-            <div>
-              <label>발급기관 (Issuer)</label>
-              <input id="f-issuer" placeholder="Ajou Univ." value="Ajou Univ." />
-            </div>
-
-            <div class="row-2" style="grid-column:1/-1">
+            <div class="row row-3">
               <div>
-                <label>이미지 카테고리 선택</label>
-                <select id="f-image-category">
-                  <option value="">이미지 카테고리를 선택하세요</option>
-                  <option value="ipfs://bafybeihfo4yroxupl3em7w5ydgya6weki7fqd35ojshsmuf6cimw26xt2q">
-                    봉사인증용 사진
-                  </option>
-                  <option value="ipfs://bafybeidkgxefh4745gonuk6pmr53zyyc2mk2ruuedn64kxutct7dtnmi5a">
-                    수상 경력 인증용 사진
-                  </option>
-                  <option value="ipfs://bafybeib7fnmpllybn2ok7hjv732qowiujv2fg4kfkziayhluiwlmot67ge">
-                    공모전 사진
-                  </option>
-                  <option value="ipfs://bafybeicjhknr43bxuin7demvlrxg2xwkdf5rpugcqck2mtzdqd6d4ilida">
-                    수상 경력 사진
-                  </option>
-                </select>
+                <label>컨트랙트 주소 (CampusCertNFT)</label>
+                <input id="chain-address" placeholder="0x..." />
               </div>
               <div>
-                <label>CertificateID</label>
-                <input id="f-certid" placeholder="SCH-2025-0001" />
+                <label>네트워크(체인ID)</label>
+                <input id="chain-id" placeholder="31337 / 11155420(OP Sepolia) / 10(OP Main)" />
+              </div>
+              <div class="flex" style="align-items:end">
+                <button class="btn" id="btn-connect">지갑 연결</button>
+                <button class="btn ghost" id="btn-disconnect">해제</button>
               </div>
             </div>
+            <div class="small muted" id="whoami">지갑 미연결</div>
+          </section>
 
-            <div class="row-3" style="grid-column:1/-1">
-              <div>
-                <label>StudentID</label>
-                <input id="f-studentid" placeholder="2023xxxxxx" />
-              </div>
-              <div>
-                <label>IssuedAt (발급일)</label>
-                <input id="f-issuedat" type="date" />
-              </div>
+          <!-- 좌: 신청/작성 (일반 유저 전용) -->
+          <section class="card" id="sec-request">
+            <div class="flex">
+              <h2>① 인증서 요청 만들기</h2>
+              <span class="pill right">신청자 화면</span>
             </div>
-
-            <div style="grid-column:1/-1">
-              <label>TokenURI (메타데이터 CID, 온체인 전송용)</label>
-              <input id="f-tokenuri" placeholder="ipfs://bafy..." />
-            </div>
-          </div>
-
-          <div class="hr"></div>
-
-          <div class="flex">
-            <button class="btn" id="btn-preview">메타데이터 미리보기</button>
-            <button class="btn ghost" id="btn-download">메타데이터 JSON 다운로드</button>
-            <span class="right"></span>
-            <button class="btn ok" id="btn-create">요청 생성</button>
-          </div>
-        </section>
-
-        <!-- 우: 도움/요약 (공통) -->
-        <aside class="card" id="sec-help">
-          <h2>가이드 & 상태</h2>
-          <div class="tabbar" style="margin:6px 0 10px">
-            <button class="active" data-tab="t1">요약</button>
-            <button data-tab="t2">데이터 규격</button>
-            <button data-tab="t3">주의사항</button>
-          </div>
-          <div id="tab-t1">
-            <p class="small muted">
-              이 페이지는 <b>온체인/로컬 겸용</b> 데모입니다. 지갑 연결 시 CampusCertNFT 컨트랙트의
-              <code>createRequest/approve/reject/mintNFT</code>를 호출합니다.
+            <p class="muted small">
+              지갑 미연결: 로컬 <b>Pending</b> 저장 · 지갑 연결+TokenURI 있으면
+              <b>createRequest(beneficiary, tokenURI)</b> 온체인 호출
             </p>
-            <ul class="small">
-              <li>① 입력 → (지갑 O) <code>createRequest(beneficiary, tokenURI)</code> / (지갑 X) 로컬 Pending 생성</li>
-              <li>② 관리자 승인/반려/민팅: onlyOwner 계정 필요(지갑 X면 로컬 상태변경)</li>
-              <li>③ “기업 검증” 탭: 로컬 데이터 기준의 모의 조회</li>
-            </ul>
-          </div>
-          <div id="tab-t2" hidden>
-            <p class="small">권장 메타데이터(JSON):</p>
-            <pre class="small">{
+
+            <div class="row row-2">
+              <div>
+                <label>인증서 이름 (name)</label>
+                <input id="f-name" placeholder="예) 봉사활동 인증서" />
+              </div>
+              <div>
+                <label>발급기관 (Issuer)</label>
+                <input id="f-issuer" placeholder="Ajou Univ." value="Ajou Univ." />
+              </div>
+
+              <div class="row-2" style="grid-column:1/-1">
+                <div>
+                  <label>이미지 카테고리 선택</label>
+                  <select id="f-image-category">
+                    <option value="">이미지 카테고리를 선택하세요</option>
+                    <option value="ipfs://bafybeihfo4yroxupl3em7w5ydgya6weki7fqd35ojshsmuf6cimw26xt2q">
+                      봉사인증용 사진
+                    </option>
+                    <option value="ipfs://bafybeidkgxefh4745gonuk6pmr53zyyc2mk2ruuedn64kxutct7dtnmi5a">
+                      수상 경력 인증용 사진
+                    </option>
+                    <option value="ipfs://bafybeib7fnmpllybn2ok7hjv732qowiujv2fg4kfkziayhluiwlmot67ge">
+                      공모전 사진
+                    </option>
+                    <option value="ipfs://bafybeicjhknr43bxuin7demvlrxg2xwkdf5rpugcqck2mtzdqd6d4ilida">
+                      수상 경력 사진
+                    </option>
+                  </select>
+                </div>
+                <div>
+                  <label>CertificateID</label>
+                  <input id="f-certid" placeholder="SCH-2025-0001" />
+                </div>
+              </div>
+
+              <div class="row-3" style="grid-column:1/-1">
+                <div>
+                  <label>StudentID</label>
+                  <input id="f-studentid" placeholder="2023xxxxxx" />
+                </div>
+                <div>
+                  <label>IssuedAt (발급일)</label>
+                  <input id="f-issuedat" type="date" />
+                </div>
+              </div>
+
+              <div style="grid-column:1/-1">
+                <label>TokenURI (메타데이터 CID, 온체인 전송용)</label>
+                <input id="f-tokenuri" placeholder="ipfs://bafy..." />
+              </div>
+            </div>
+
+            <div class="hr"></div>
+
+            <div class="flex">
+              <button class="btn" id="btn-preview">메타데이터 미리보기</button>
+              <button class="btn ghost" id="btn-download">메타데이터 JSON 다운로드</button>
+              <span class="right"></span>
+              <button class="btn ok" id="btn-create">요청 생성</button>
+            </div>
+          </section>
+
+          <!-- 우: 도움/요약 (공통) -->
+          <aside class="card" id="sec-help">
+            <h2>가이드 & 상태</h2>
+            <div class="tabbar" style="margin:6px 0 10px">
+              <button class="active" data-tab="t1">요약</button>
+              <button data-tab="t2">데이터 규격</button>
+              <button data-tab="t3">주의사항</button>
+            </div>
+            <div id="tab-t1">
+              <p class="small muted">
+                이 페이지는 <b>온체인/로컬 겸용</b> 데모입니다. 지갑 연결 시 CampusCertNFT 컨트랙트의
+                <code>createRequest/approve/reject/mintNFT</code>를 호출합니다.
+              </p>
+              <ul class="small">
+                <li>① 입력 → (지갑 O) <code>createRequest(beneficiary, tokenURI)</code> / (지갑 X) 로컬 Pending 생성</li>
+                <li>② 관리자 승인/반려/민팅: onlyOwner 계정 필요(지갑 X면 로컬 상태변경)</li>
+                <li>③ “마이페이지”에서 나의 요청/발급 내역을 확인할 수 있습니다.</li>
+              </ul>
+            </div>
+            <div id="tab-t2" hidden>
+              <p class="small">권장 메타데이터(JSON):</p>
+              <pre class="small">{
   "name": "봉사활동 인증서",
   "description": "교내 봉사활동 10시간",
   "image": "ipfs://&lt;IMAGE_CID&gt;",
@@ -297,104 +299,95 @@
     {"trait_type":"CertificateID","value":"SCH-2025-0001"}
   ]
 }</pre>
-          </div>
-          <div id="tab-t3" hidden>
-            <ul class="small">
-              <li>컨트랙트 소유자만 승인/반려/민팅 가능(onlyOwner).</li>
-              <li>로컬 테이블은 브라우저 저장소 기반이라 지우면 사라집니다.</li>
-              <li>온체인 목록 조회는 <code>requestCount()</code> / <code>requests(id)</code> 뷰 함수에 의존합니다.</li>
-            </ul>
-          </div>
-        </aside>
+            </div>
+            <div id="tab-t3" hidden>
+              <ul class="small">
+                <li>컨트랙트 소유자만 승인/반려/민팅 가능(onlyOwner).</li>
+                <li>로컬 테이블은 브라우저 저장소 기반이라 지우면 사라집니다.</li>
+                <li>온체인 목록 조회는 <code>requestCount()</code> / <code>requests(id)</code> 뷰 함수에 의존합니다.</li>
+              </ul>
+            </div>
+          </aside>
 
-        <!-- 관리자 (관리자 계정 전용) -->
-        <section class="card" style="grid-column:1/-1" id="sec-admin">
+          <!-- 관리자 (관리자 계정 전용) -->
+          <section class="card" style="grid-column:1/-1" id="sec-admin">
+            <div class="flex">
+              <h2>② 관리자 대시보드</h2>
+              <span class="pill right">지갑 연결+소유자면 온체인 · 아니면 로컬</span>
+            </div>
+
+            <div class="flex" style="margin-bottom:8px">
+              <div class="flex" style="gap:6px">
+                <button class="btn ghost" id="btn-refresh">목록 새로고침</button>
+                <button class="btn ghost" id="btn-export">CSV 내보내기</button>
+                <button class="btn err" id="btn-clear">모든 데이터 삭제(로컬)</button>
+              </div>
+              <span class="right small muted">요청 수: <b id="count-total">0</b> 건</span>
+            </div>
+
+            <div class="hr"></div>
+
+            <div class="row row-3">
+              <div>
+                <label>상태 필터</label>
+                <select id="filter-status">
+                  <option value="">전체</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Minted">Minted</option>
+                  <option value="Rejected">Rejected</option>
+                  <option value="Revoked">Revoked</option>
+                </select>
+              </div>
+              <div>
+                <!-- beneficiary 검색도 포함 -->
+                <label>검색 (CertificateID / StudentID / IssuedTo / Beneficiary)</label>
+                <input id="filter-q" placeholder="예) SCH-2025-0001, 2023xxxx, 0x..." />
+              </div>
+              <div class="flex" style="align-items:end">
+                <button class="btn" id="btn-apply">필터 적용</button>
+                <button class="btn ghost" id="btn-reset">초기화</button>
+              </div>
+            </div>
+
+            <div class="hr"></div>
+
+            <div style="overflow:auto">
+              <table class="table" id="tbl">
+                <thead>
+                  <tr>
+                    <th>RequestID</th>
+                    <th>CertificateID</th>
+                    <th>StudentID</th>
+                    <th>IssuedTo (Beneficiary)</th>
+                    <th>Status</th>
+                    <th>IssuedAt</th>
+                    <th>액션</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <!-- 마이페이지 -->
+      <section id="page-mypage" hidden>
+        <section class="card" id="sec-mypage">
           <div class="flex">
-            <h2>② 관리자 대시보드</h2>
-            <span class="pill right">지갑 연결+소유자면 온체인 · 아니면 로컬</span>
+            <h2>마이페이지 – 나의 인증서</h2>
+            <button class="btn ghost small right" id="btn-mypage-back">← 대시보드로</button>
           </div>
-
-          <div class="flex" style="margin-bottom:8px">
-            <div class="flex" style="gap:6px">
-              <button class="btn ghost" id="btn-refresh">목록 새로고침</button>
-              <button class="btn ghost" id="btn-export">CSV 내보내기</button>
-              <button class="btn err" id="btn-clear">모든 데이터 삭제(로컬)</button>
-            </div>
-            <span class="right small muted">요청 수: <b id="count-total">0</b> 건</span>
-          </div>
-
+          <p class="small muted" id="mypage-wallet-info" style="margin-top:4px;">
+            로그인한 계정의 지갑 주소를 기준으로 요청/발급된 인증서를 보여줍니다.
+          </p>
           <div class="hr"></div>
-
-          <div class="row row-3">
-            <div>
-              <label>상태 필터</label>
-              <select id="filter-status">
-                <option value="">전체</option>
-                <option value="Pending">Pending</option>
-                <option value="Minted">Minted</option>
-                <option value="Rejected">Rejected</option>
-                <option value="Revoked">Revoked</option>
-              </select>
-            </div>
-            <div>
-              <!-- ★ beneficiary 검색도 포함 -->
-              <label>검색 (CertificateID / StudentID / IssuedTo / Beneficiary)</label>
-              <input id="filter-q" placeholder="예) SCH-2025-0001, 2023xxxx, 0x..." />
-            </div>
-            <div class="flex" style="align-items:end">
-              <button class="btn" id="btn-apply">필터 적용</button>
-              <button class="btn ghost" id="btn-reset">초기화</button>
-            </div>
+          <div id="mypage-empty" class="small muted">
+            아직 이 지갑 주소로 요청하거나 발급된 인증서가 없습니다.
           </div>
-
-          <div class="hr"></div>
-
-          <div style="overflow:auto">
-            <table class="table" id="tbl">
-              <thead>
-                <tr>
-                  <th>RequestID</th>
-                  <th>CertificateID</th>
-                  <th>StudentID</th>
-                  <th>IssuedTo (Beneficiary)</th>
-                  <th>Status</th>
-                  <th>IssuedAt</th>
-                  <th>액션</th>
-                </tr>
-              </thead>
-              <tbody id="tbody"></tbody>
-            </table>
-          </div>
+          <div id="mypage-list" class="grid" style="margin-top:8px; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:12px;"></div>
         </section>
-
-        <!-- 기업 검증 (일반 유저 전용) -->
-        <section class="card" style="grid-column:1/-1" id="sec-verify">
-          <div class="flex">
-            <h2>③ 기업 검증(조회) 포털 – 데모</h2>
-            <span class="pill right">LocalStorage 기반 모의 검증</span>
-          </div>
-          <div class="row row-3">
-            <div>
-              <label>CertificateID</label>
-              <input id="v-certid" placeholder="SCH-2025-0001" />
-            </div>
-            <div>
-              <label>StudentID</label>
-              <input id="v-studentid" placeholder="2023xxxxxx" />
-            </div>
-            <div>
-              <!-- 여기서도 IssuedTo를 지갑주소 기준으로 -->
-              <label>IssuedTo / Beneficiary (지갑 주소)</label>
-              <input id="v-issuedto" placeholder="0x..." />
-            </div>
-          </div>
-          <div class="flex" style="margin-top:10px">
-            <button class="btn" id="btn-verify">조회</button>
-            <span class="small muted right">※ 실제 검증은 온체인 이벤트/서명 검증 또는 서버 API 사용</span>
-          </div>
-          <div id="verify-result" style="margin-top:12px"></div>
-        </section>
-      </div>
+      </section>
     </section>
   </main>
 
