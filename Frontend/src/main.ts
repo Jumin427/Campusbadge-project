@@ -292,7 +292,6 @@ function autoConnectChain(): void {
 function applyAuthUI(): void {
   const loginPill = $("#login-pill") as HTMLDivElement;
   const logoutBtn = $("#btn-logout") as HTMLButtonElement;
-  const myBtn = $("#btn-mypage") as HTMLButtonElement;
 
   const secRequest = $("#sec-request") as HTMLElement;
   const secAdmin   = $("#sec-admin") as HTMLElement;
@@ -305,7 +304,6 @@ function applyAuthUI(): void {
     setView("login");
     loginPill.innerHTML = '계정: <b>로그인 필요</b>';
     logoutBtn.style.display = "none";
-    myBtn.style.display = "none";
     welcome.textContent = "게스트";
     disconnectChain();
     setMainPage("home");
@@ -323,7 +321,6 @@ function applyAuthUI(): void {
 
   loginPill.innerHTML = `계정: <b>${displayName}</b> (${isAdmin ? "관리자" : "일반 유저"})${walletInfo}`;
   logoutBtn.style.display = "inline-flex";
-  myBtn.style.display = "inline-flex";
   welcome.textContent = `${displayName} · 역할: ${isAdmin ? "관리자" : "일반 유저"}`;
 
   // 역할별 섹션 토글 (기업검증 제거, 요청/관리자만)
@@ -401,7 +398,7 @@ function download(filename: string, text: string): void {
   URL.revokeObjectURL(url);
 }
 
-// ---------- 탭 ----------
+// ---------- 탭 (요약 가이드는 삭제되었지만 코드 호환용) ----------
 (function initTabs() {
   $$(".tabbar button").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -531,11 +528,21 @@ function download(filename: string, text: string): void {
   applyAuthUI();
 });
 
-// 헤더 마이페이지 버튼
-($("#btn-mypage") as HTMLButtonElement).addEventListener("click", () => {
-  setMainPage("mypage");
+// 상단 쇼트컷: 인증서 요청 / 내 인증서 보기
+($("#shortcut-request") as HTMLButtonElement).addEventListener("click", () => {
+  setMainPage("home");
+  const secReq = $("#sec-request") as HTMLElement | null;
+  if (secReq) {
+    secReq.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 });
-// 마이페이지 내 "대시보드로" 버튼
+
+($("#shortcut-mypage") as HTMLButtonElement).addEventListener("click", () => {
+  setMainPage("mypage");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
+// 내 인증서 화면 → 대시보드로
 ($("#btn-mypage-back") as HTMLButtonElement).addEventListener("click", (e) => {
   e.preventDefault();
   setMainPage("home");
@@ -881,7 +888,7 @@ async function mutateOnchain(reqId: number, op: "approve" | "reject" | "mint"): 
   if (confirm("모든 로컬 데이터를 삭제할까요?")) { localStorage.removeItem(DB_KEY); void renderTable(); TOAST.show("삭제 완료"); }
 });
 
-// ---------- 마이페이지 렌더링 ----------
+// ---------- 내 인증서 렌더링 ----------
 async function renderMyPage(): Promise<void> {
   const current = authGetCurrent();
   const info = $("#mypage-wallet-info") as HTMLParagraphElement;
@@ -949,7 +956,7 @@ async function renderMyPage(): Promise<void> {
         name: r.meta.name || "(이름 없음)",
         issuer: attr(r.meta, "Issuer") || "",
         image: r.meta.image,
-        tokenURI: undefined, // 로컬에선 CID를 별도로 저장하지 않음
+        tokenURI: undefined,
         certId: attr(r.meta, "CertificateID") || "",
         studentId: attr(r.meta, "StudentID") || "",
         issuedAt: attr(r.meta, "IssuedAt") || "",
